@@ -2,7 +2,6 @@ image: microsoft/dotnet:latest
 
 stages:
   - build
-  - test
 
 variables:
   project: "DORS"
@@ -16,7 +15,10 @@ build:
     build_path: "$project"
   script:
     - "ls"
+    - "cd DORS"
     - "dotnet build"
+    - "echo $project"
+    - "echo $build_path"
 
 test:
   stage: test
