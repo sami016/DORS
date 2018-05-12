@@ -2,6 +2,18 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageIconUrl>./icon.png</PackageIconUrl>
+    <Authors>Sam Holder</Authors>
+    <Company>Sam Holder</Company>
+    <Description>Dynamic Open Region System - networking library.</Description>
+    <Copyright>Sam Holder 2018</Copyright>
+    <PackageReleaseNotes>Basic client/server capabilities added.</PackageReleaseNotes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ActionSerialization" Version="1.0.0" />
+    <PackageReference Include="Lidgren.Network" Version="1.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
 
 </Project>
