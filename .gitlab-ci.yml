@@ -15,7 +15,7 @@ build:
   variables:
     build_path: "$project"
   script:
-    - "cd $project_path"
+    - "ls"
     - "dotnet build"
 
 test:
