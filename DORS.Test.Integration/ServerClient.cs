@@ -21,12 +21,9 @@ namespace DORS.Test.Integration
             public string SomeData { get; } = "SomeData";
         }
 
-        public class AAproval : IApprovalCheck
+        private static bool PerformApprovalCheck(RemoteClient remoteClient, object approvalAction)
         {
-            public bool IsApproved(object approvalMessage)
-            {
-                return approvalMessage is A;
-            }
+            return approvalAction is A;
         }
 
         private static readonly Random Random = new Random();
@@ -43,10 +40,10 @@ namespace DORS.Test.Integration
 
             ClientConfiguration = new DorsClientConfiguration("test");
             Server1Configuration = new DorsServerConfiguration("test");
-            Server1Configuration.EnableApproval(new AAproval());
+            Server1Configuration.EnableApproval(PerformApprovalCheck);
             Server1Configuration.LocalPort = Server1Port;
             Server2Configuration = new DorsServerConfiguration("test");
-            Server2Configuration.EnableApproval(new AAproval());
+            Server2Configuration.EnableApproval(PerformApprovalCheck);
             Server2Configuration.LocalPort = Server2Port;
         }
 
@@ -56,8 +53,6 @@ namespace DORS.Test.Integration
 
             var server = new ServerControl(Server1Configuration);
             server.Start();
-
-            var clientConfig = new NetPeerConfiguration("test");
 
             var client = new ClientControl(ClientConfiguration);
             using (var serverMonitor = server.Monitor())
