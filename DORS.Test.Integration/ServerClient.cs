@@ -21,6 +21,12 @@ namespace DORS.Test.Integration
             public string SomeData { get; } = "SomeData";
         }
 
+        [ActionType("B")]
+        public class B
+        {
+            public string SomeData { get; } = "SomeOtherData";
+        }
+
         private static bool PerformApprovalCheck(RemoteClient remoteClient, object approvalAction)
         {
             return approvalAction is A;
@@ -61,6 +67,7 @@ namespace DORS.Test.Integration
                 var success = await client.AsyncConnect("localhost", Server1Port, new A());
                 Thread.Sleep(50);
                 serverMonitor.Should().Raise(nameof(ServerControl.Connected));
+                serverMonitor.Should().Raise(nameof(ServerControl.ApprovalGranted));
                 clientMonitor.Should().Raise(nameof(ClientControl.Connected));
                 success.Should().BeTrue();
             }
@@ -101,7 +108,23 @@ namespace DORS.Test.Integration
             server.NetServer.ConnectionsCount.Should().Be(0);
         }
 
+        [Fact]
+        public async Task ApprovalDeniedFlow()
+        {
 
+            var server = new ServerControl(Server1Configuration);
+            server.Start();
+
+            var client = new ClientControl(ClientConfiguration);
+            using (var serverMonitor = server.Monitor())
+            using (var clientMonitor = client.Monitor())
+            {
+                var success = await client.AsyncConnect("localhost", Server1Port, new B());
+                Thread.Sleep(50);
+                serverMonitor.Should().Raise(nameof(ServerControl.ApprovalDenied));
+                success.Should().BeFalse();
+            }
+        }
 
         [Fact]
         public async Task ServerDisconnectFlow()

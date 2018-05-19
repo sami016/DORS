@@ -14,6 +14,8 @@ namespace DORS.Servers
         public NetServer NetServer { get; private set; }
 
         public event EventHandler<RemoteClient> Connected;
+        public event EventHandler<RemoteClient> ApprovalGranted;
+        public event EventHandler<RemoteClient> ApprovalDenied;
         public event EventHandler<RemoteClient> Disconnected;
         public event EventHandler<RemoteClientAction> MessageReceived;
 
@@ -44,16 +46,18 @@ namespace DORS.Servers
                     {
                         case NetIncomingMessageType.ConnectionApproval:
                             // Deserialize message - then either approval or deny using approval method.
-                            var action = _configuration.ActionDeserialize(message);
+                            var action = _configuration.SerializationStrategy.Deserializer(message);
                             var remoteClient = _remoteClientRegistry[message.SenderConnection.RemoteUniqueIdentifier];
                             if (action != null 
                                 &&_configuration.ApprovalCheck(remoteClient, action))
                             {
                                 message.SenderConnection.Approve();
+                                ApprovalGranted?.Invoke(this, remoteClient);
                             }
                             else
                             {
                                 message.SenderConnection.Deny();
+                                ApprovalDenied?.Invoke(this, remoteClient);
                             }
                             break;
                         case NetIncomingMessageType.StatusChanged:
@@ -70,7 +74,7 @@ namespace DORS.Servers
 
         private void OnDataReceived(NetIncomingMessage message)
         {
-            var action = _configuration.ActionDeserialize(message);
+            var action = _configuration.SerializationStrategy.Deserializer(message);
             var session = _remoteClientRegistry[message.SenderConnection.RemoteUniqueIdentifier];
             MessageReceived?.Invoke(this, new RemoteClientAction(session, action));
 
@@ -127,7 +131,7 @@ namespace DORS.Servers
         public void Send(NetConnection connection, object action, NetDeliveryMethod method = NetDeliveryMethod.ReliableOrdered)
         {
             var message = NetServer.CreateMessage();
-            _configuration.ActionSerialize(action, message);
+            _configuration.SerializationStrategy.Serializer(action, message);
             NetServer.SendMessage(message, connection, method);
         }
 
@@ -139,7 +143,7 @@ namespace DORS.Servers
         public void Send(object action, NetDeliveryMethod method = NetDeliveryMethod.ReliableOrdered)
         {
             var message = NetServer.CreateMessage();
-            _configuration.ActionSerialize(action, message);
+            _configuration.SerializationStrategy.Serializer(action, message);
             NetServer.SendToAll(message, method);
         }
 

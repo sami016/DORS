@@ -11,9 +11,8 @@ namespace DORS.Shared
     /// </summary>
     public abstract class DorsConfiguration
     {
-        public Func<NetIncomingMessage, object> ActionDeserialize { get; set; }
-        public Action<object, NetOutgoingMessage> ActionSerialize { get; set; }
         public NetPeerConfiguration PeerConfiguration { get; private set; }
+        public ISerializationStrategy SerializationStrategy { get; set; }
 
         public int LocalPort
         {
@@ -24,9 +23,7 @@ namespace DORS.Shared
         protected DorsConfiguration(string appIdentifier)
         {
             PeerConfiguration = new NetPeerConfiguration(appIdentifier);
-            // Default: action convert json.
-            ActionDeserialize = msg => ActionConvert.Deserialize(msg.ReadString());
-            ActionSerialize = (action, msg) => msg.Write(ActionConvert.Serialize(action));
+            SerializationStrategy = new BinarySerializationStrategy();
         }
     }
 }
