@@ -2,18 +2,25 @@
 using System.Collections.Generic;
 using System.Text;
 using ActionSerialization;
+using Lidgren.Network;
 
 namespace DORS.Shared
 {
     public class JsonSerializationStrategy : ISerializationStrategy
     {
-        public ActionDeserializer Deserializer { get; }
-        public ActionSerializer Serializer { get; }
 
         public JsonSerializationStrategy()
         {
-            Deserializer = msg => ActionConvert.Deserialize(msg.ReadString());
-            Serializer = (action, msg) => msg.Write(ActionConvert.Serialize(action));
+        }
+
+        public object Deserialize(NetIncomingMessage incomingMessage)
+        {
+            return ActionConvert.Deserialize(incomingMessage.ReadString());
+        }
+
+        public void Serialize(object action, NetOutgoingMessage outgoingMessage)
+        {
+            outgoingMessage.Write(ActionConvert.Serialize(action));
         }
     }
 }

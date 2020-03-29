@@ -10,20 +10,15 @@ namespace DORS.Shared
 {
     public class BinarySerializationStrategy : ISerializationStrategy
     {
-        public ActionDeserializer Deserializer { get; }
-        public ActionSerializer Serializer { get; }
-
         private BinaryFormatter _binaryFormatter;
 
         public BinarySerializationStrategy()
         {
-            Deserializer = msg => ActionConvert.Deserialize(msg.ReadString());
-            Serializer = (action, msg) => msg.Write(ActionConvert.Serialize(action));
             _binaryFormatter = new BinaryFormatter();
 
         }
 
-        private void Serialize(object action, NetOutgoingMessage message)
+        public void Serialize(object action, NetOutgoingMessage message)
         {
             using (var memoryStream = new MemoryStream())
             {
@@ -33,7 +28,7 @@ namespace DORS.Shared
             }
         }
 
-        private object Deserialize(NetIncomingMessage message)
+        public object Deserialize(NetIncomingMessage message)
         {
             using (var memoryStream = new MemoryStream())
             {

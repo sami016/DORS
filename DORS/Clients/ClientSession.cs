@@ -68,7 +68,7 @@ namespace DORS.Clients
             if (authMessage != null)
             {
                 hailMessage = _netClient.CreateMessage();
-                _configuration.SerializationStrategy.Serializer(authMessage, hailMessage);
+                _configuration.SerializationStrategy.Serialize(authMessage, hailMessage);
                 hailMessage.Write(hailMessage);
             }
             // Initialise connection.
@@ -170,7 +170,7 @@ namespace DORS.Clients
                     }
                     break;
                 case NetIncomingMessageType.Data:
-                    var action = _configuration.SerializationStrategy.Deserializer(message);
+                    var action = _configuration.SerializationStrategy.Deserialize(message);
                     MessageReceived?.Invoke(this, action);
                     break;
             }
@@ -180,7 +180,7 @@ namespace DORS.Clients
         public void Send(object action, NetDeliveryMethod method = NetDeliveryMethod.ReliableOrdered, int channelSequence = 0)
         {
             var message = _netClient.CreateMessage();
-            _configuration.SerializationStrategy.Serializer(action, message);
+            _configuration.SerializationStrategy.Serialize(action, message);
             _connection.SendMessage(message, method, channelSequence);
         }
 

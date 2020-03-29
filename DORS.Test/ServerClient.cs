@@ -1,26 +1,26 @@
-﻿using DORS.Servers;
+using ActionSerializer;
 using DORS.Clients;
+using DORS.Servers;
+using FluentAssertions;
+using Lidgren.Network;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ActionSerializer;
-using Lidgren.Network;
 using Xunit;
-using FluentAssertions;
 
-namespace DORS.Test.Integration
+namespace DORS.Test
 {
     public class ServerClient
     {
+        [Serializable]
         [ActionType("A")]
         public class A
         {
             public string SomeData { get; } = "SomeData";
         }
 
+        [Serializable]
         [ActionType("B")]
         public class B
         {

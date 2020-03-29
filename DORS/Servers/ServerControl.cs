@@ -46,7 +46,7 @@ namespace DORS.Servers
                     {
                         case NetIncomingMessageType.ConnectionApproval:
                             // Deserialize message - then either approval or deny using approval method.
-                            var action = _configuration.SerializationStrategy.Deserializer(message);
+                            var action = _configuration.SerializationStrategy.Deserialize(message);
                             var remoteClient = _remoteClientRegistry[message.SenderConnection.RemoteUniqueIdentifier];
                             if (action != null 
                                 &&_configuration.ApprovalCheck(remoteClient, action))
@@ -74,10 +74,9 @@ namespace DORS.Servers
 
         private void OnDataReceived(NetIncomingMessage message)
         {
-            var action = _configuration.SerializationStrategy.Deserializer(message);
+            var action = _configuration.SerializationStrategy.Deserialize(message);
             var session = _remoteClientRegistry[message.SenderConnection.RemoteUniqueIdentifier];
             MessageReceived?.Invoke(this, new RemoteClientAction(session, action));
-
         }
 
         private void OnStatusChanged(NetIncomingMessage message, NetConnectionStatus status)
@@ -131,7 +130,7 @@ namespace DORS.Servers
         public void Send(NetConnection connection, object action, NetDeliveryMethod method = NetDeliveryMethod.ReliableOrdered)
         {
             var message = NetServer.CreateMessage();
-            _configuration.SerializationStrategy.Serializer(action, message);
+            _configuration.SerializationStrategy.Serialize(action, message);
             NetServer.SendMessage(message, connection, method);
         }
 
@@ -143,7 +142,7 @@ namespace DORS.Servers
         public void Send(object action, NetDeliveryMethod method = NetDeliveryMethod.ReliableOrdered)
         {
             var message = NetServer.CreateMessage();
-            _configuration.SerializationStrategy.Serializer(action, message);
+            _configuration.SerializationStrategy.Serialize(action, message);
             NetServer.SendToAll(message, method);
         }
 
