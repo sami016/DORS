@@ -10,9 +10,14 @@ namespace DORS.Shared
     /// DORS configuration.
     /// </summary>
     public abstract class DorsConfiguration
-    {
-        public NetPeerConfiguration PeerConfiguration { get; private set; }
-        public ISerializationStrategy SerializationStrategy { get; set; }
+    { 
+        
+        public string AppIdentifier { get; set; }
+
+        private Lazy<NetPeerConfiguration> _netPeerConfiguration;
+
+        public NetPeerConfiguration PeerConfiguration => _netPeerConfiguration.Value;
+        public ISerializationStrategy SerializationStrategy { get; set; } = new BinarySerializationStrategy();
 
         public int LocalPort
         {
@@ -20,10 +25,16 @@ namespace DORS.Shared
             set => PeerConfiguration.Port = value;
         }
 
-        protected DorsConfiguration(string appIdentifier)
+        public DorsConfiguration()
         {
-            PeerConfiguration = new NetPeerConfiguration(appIdentifier);
+            _netPeerConfiguration = new Lazy<NetPeerConfiguration>(CreateNetPeerConfig);
             SerializationStrategy = new BinarySerializationStrategy();
+        }
+
+        protected virtual NetPeerConfiguration CreateNetPeerConfig()
+        {
+            var config = new NetPeerConfiguration(AppIdentifier);
+            return config;
         }
     }
 }

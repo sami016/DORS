@@ -7,8 +7,5 @@ namespace DORS.Clients
 {
     public class DorsClientConfiguration : DorsConfiguration
     {
-        public DorsClientConfiguration(string appIdentifier) : base(appIdentifier)
-        {
-        }
     }
 }

@@ -13,33 +13,7 @@ namespace DORS.Servers
     {
         private readonly IDictionary<long, RemoteClient> _clients = new ConcurrentDictionary<long, RemoteClient>();
 
-        //public event EventHandler<T> Connected;
-        //public event EventHandler<T> Disconnected;
-        //public event EventHandler<InboundClientAction<T>> MessageReceived;
-
-        //public RemoteClientRegistry(ServerControl serverControl)
-        //{
-        //    serverControl.Connected += OnServerPeerConnected;
-        //    serverControl.Disconnected += OnServerPeerDisconnected;
-        //    serverControl.MessageReceived += OnServerPeerMessageReceived;
-        //}
-
-       
-
-        //private void OnServerPeerMessageReceived(object sender, InboundAction inboundAction)
-        //{
-        //    var id = inboundAction.ClientId;
-        //    if (_clients.ContainsKey(id))
-        //    {
-        //        MessageReceived?.Invoke(
-        //            this,
-        //            new InboundClientAction<T>(
-        //                _clients[id],
-        //                inboundAction.Action
-        //            )
-        //        );
-        //    }
-        //}
+        public IEnumerable<RemoteClient> All => _clients.Values;
 
         public RemoteClient this[long id]
         {

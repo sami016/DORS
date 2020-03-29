@@ -17,9 +17,10 @@ namespace DORS.Servers
         public event EventHandler<RemoteClient> ApprovalGranted;
         public event EventHandler<RemoteClient> ApprovalDenied;
         public event EventHandler<RemoteClient> Disconnected;
-        public event EventHandler<RemoteClientAction> MessageReceived;
 
         private readonly RemoteClientRegistry _remoteClientRegistry = new RemoteClientRegistry();
+
+        public IEnumerable<RemoteClient> RemoteClients => _remoteClientRegistry.All;
 
         public ServerControl(DorsServerConfiguration configuration)
         {
@@ -76,7 +77,7 @@ namespace DORS.Servers
         {
             var action = _configuration.SerializationStrategy.Deserialize(message);
             var session = _remoteClientRegistry[message.SenderConnection.RemoteUniqueIdentifier];
-            MessageReceived?.Invoke(this, new RemoteClientAction(session, action));
+            session.OnMessageReceived(action);
         }
 
         private void OnStatusChanged(NetIncomingMessage message, NetConnectionStatus status)

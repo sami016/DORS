@@ -10,6 +10,8 @@ namespace DORS.Servers
         internal ServerControl ServerControl { get; set; }
         public NetConnection Connection { get; internal set; }
 
+        public event EventHandler<object> MessageReceived;
+
         public long ClientId => Connection.RemoteUniqueIdentifier;
 
         // Initialise called after the client id has been set, but prior being added to registry.
@@ -32,6 +34,11 @@ namespace DORS.Servers
         public void Send(object action, NetDeliveryMethod method = NetDeliveryMethod.ReliableOrdered)
         {
             ServerControl.Send(Connection, action, method);
+        }
+
+        internal void OnMessageReceived(object message)
+        {
+            MessageReceived?.Invoke(this, message);
         }
 
     }

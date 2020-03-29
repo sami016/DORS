@@ -8,17 +8,20 @@ namespace DORS.Servers
 {
     public class DorsServerConfiguration : DorsConfiguration
     {
-        public ApprovalCheck ApprovalCheck { get; private set; }
+        public ApprovalCheck ApprovalCheck { get; set; }
 
-        public DorsServerConfiguration(string appIdentifier) : base(appIdentifier)
+        public DorsServerConfiguration()
         {
         }
 
-        public DorsServerConfiguration EnableApproval(ApprovalCheck approvalCheck)
+        protected override NetPeerConfiguration CreateNetPeerConfig()
         {
-            ApprovalCheck = approvalCheck;
-            PeerConfiguration.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
-            return this;
+            var config = base.CreateNetPeerConfig();
+            if (ApprovalCheck != null)
+            {
+                config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
+            }
+            return config;
         }
 
     }

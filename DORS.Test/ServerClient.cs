@@ -44,12 +44,15 @@ namespace DORS.Test
         {
             ActionSerialization.ActionConvert.SetActionAssemblies(typeof(ServerClient).Assembly);
 
-            ClientConfiguration = new DorsClientConfiguration("test");
-            Server1Configuration = new DorsServerConfiguration("test");
-            Server1Configuration.EnableApproval(PerformApprovalCheck);
+            ClientConfiguration = new DorsClientConfiguration();
+            ClientConfiguration.AppIdentifier = "test";
+            Server1Configuration = new DorsServerConfiguration();
+            Server1Configuration.AppIdentifier = "test";
+            Server1Configuration.ApprovalCheck = PerformApprovalCheck;
             Server1Configuration.LocalPort = Server1Port;
-            Server2Configuration = new DorsServerConfiguration("test");
-            Server2Configuration.EnableApproval(PerformApprovalCheck);
+            Server2Configuration = new DorsServerConfiguration();
+            Server2Configuration.AppIdentifier = "test";
+            Server2Configuration.ApprovalCheck = PerformApprovalCheck;
             Server2Configuration.LocalPort = Server2Port;
         }
 
@@ -74,10 +77,11 @@ namespace DORS.Test
 
             // Send message from client to server.
             using (var serverMonitor = server.Monitor())
+            using (var remoteClientMonitor = server.RemoteClients.First().Monitor())
             {
                 client.Send(new A());
                 Thread.Sleep(50);
-                serverMonitor.Should().Raise(nameof(ServerControl.MessageReceived));
+                remoteClientMonitor.Should().Raise(nameof(RemoteClient.MessageReceived));
             }
 
             // Send message from server to the client.
