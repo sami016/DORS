@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using DORS.Interfaces;
+using DORS.Shared;
 using Lidgren.Network;
 
 namespace DORS.Servers
 {
-    public class RemoteClient : IDisposable
+    public class RemoteConnection : IMessageSender, IDisposable
     {
         internal ServerControl ServerControl { get; set; }
         public NetConnection Connection { get; internal set; }
-
+        public PolymorphicDispatcher PolymorphicDispatcher { get; } = new PolymorphicDispatcher();
         public event EventHandler<object> MessageReceived;
 
         public long ClientId => Connection.RemoteUniqueIdentifier;
@@ -29,16 +31,17 @@ namespace DORS.Servers
         /// Send a message to the remote client.
         /// </summary>
         /// <param name="connection">connection</param>
-        /// <param name="action">action</param>
+        /// <param name="message">action</param>
         /// <param name="method">method</param>
-        public void Send(object action, NetDeliveryMethod method = NetDeliveryMethod.ReliableOrdered)
+        public void Send(object message, NetDeliveryMethod method = NetDeliveryMethod.ReliableOrdered)
         {
-            ServerControl.Send(Connection, action, method);
+            ServerControl.Send(Connection, message, method);
         }
 
         internal void OnMessageReceived(object message)
         {
             MessageReceived?.Invoke(this, message);
+            PolymorphicDispatcher.Dispatch(message);
         }
 
     }

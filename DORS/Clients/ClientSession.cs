@@ -60,7 +60,7 @@ namespace DORS.Clients
             _configuration = configuration;
             _cancellationTokenSource = new CancellationTokenSource();
             // Create net client.
-            _netClient = new NetClient(_configuration.PeerConfiguration);
+            _netClient = new NetClient(new NetPeerConfiguration(_configuration.AppIdentifier));
             _netClient.Start();
 
             // Prepare hail message.
@@ -75,34 +75,32 @@ namespace DORS.Clients
             _connection = _netClient.Connect(host, port, hailMessage);
         }
 
-        public void Start()
+        public void ProcessIncomingMessages()
         {
             new Thread(Process).Start();
         }
 
         public Task<bool> AsyncConnect()
         {
-            return Task.Run((Func<bool>)Connect);
+            return Task.Run((Func<bool>)ProcessIncomingMessagesStart);
         }
 
         /// <summary>
-        /// Connects synchronously.
-        /// This will call start automatically when connection succeeds.
+        /// Process only status changed messages until either a connected or a not connected.
         /// </summary>
-        /// <returns></returns>
-        public bool Connect()
+        /// <param name="connected">connected succefully</param>
+        private bool ProcessMessagesStart()
         {
             // Read messages until we either connect or disconnect.
             foreach (var message in MessageStream())
             {
-                ProcessMessage(message);
+                //ProcessMessage(message);
                 switch (message.MessageType)
                 {
                     case NetIncomingMessageType.StatusChanged:
                         var status = (NetConnectionStatus)message.PeekByte();
                         if (status == NetConnectionStatus.Connected)
                         {
-                            Start();
                             return true;
                         }
                         else if (status == NetConnectionStatus.Disconnected)
@@ -112,8 +110,26 @@ namespace DORS.Clients
                         break;
                 }
             }
-
             return false;
+        }
+
+        /// <summary>
+        /// Connects synchronously.
+        /// This will call start automatically when connection succeeds.
+        /// </summary>
+        /// <returns></returns>
+        public bool ProcessIncomingMessagesStart()
+        {
+            // Listens for status changed notifications until we get either connected or disconnected.
+            var connected = ProcessMessagesStart();
+
+            // If connection was successful, start processing incoming messages in a new thread.
+            if (connected)
+            {
+                ProcessIncomingMessages();
+            }
+
+            return connected;
         }
 
         /// <summary>

@@ -7,15 +7,15 @@ using Lidgren.Network;
 namespace DORS.Servers
 {
     /// <summary>
-    /// Creates a client registry that manages remote client state, based on server control events.
+    /// Creates a client registry that manages remote connection state, based on server control events.
     /// </summary>
-    public class RemoteClientRegistry
+    public class RemoteConnectionRegistry
     {
-        private readonly IDictionary<long, RemoteClient> _clients = new ConcurrentDictionary<long, RemoteClient>();
+        private readonly IDictionary<long, RemoteConnection> _clients = new ConcurrentDictionary<long, RemoteConnection>();
 
-        public IEnumerable<RemoteClient> All => _clients.Values;
+        public IEnumerable<RemoteConnection> All => _clients.Values;
 
-        public RemoteClient this[long id]
+        public RemoteConnection this[long id]
         {
             get
             {
@@ -34,7 +34,7 @@ namespace DORS.Servers
             _clients.Remove(id);
         }
 
-        public void Remove(RemoteClient client)
+        public void Remove(RemoteConnection client)
         {
             _clients.Remove(client.ClientId);
         }

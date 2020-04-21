@@ -9,28 +9,45 @@ namespace DORS.Servers
     public class ServerControl : IDisposable
     {
         private readonly CancellationTokenSource _cancelSource;
+        private readonly NetPeerConfiguration _netPeerConfiguration;
         private readonly DorsServerConfiguration _configuration;
 
         public NetServer NetServer { get; private set; }
 
-        public event EventHandler<RemoteClient> Connected;
-        public event EventHandler<RemoteClient> ApprovalGranted;
-        public event EventHandler<RemoteClient> ApprovalDenied;
-        public event EventHandler<RemoteClient> Disconnected;
+        public event EventHandler<RemoteConnection> Connected;
+        public event EventHandler<RemoteConnection> ApprovalGranted;
+        public event EventHandler<RemoteConnection> ApprovalDenied;
+        public event EventHandler<RemoteConnection> Disconnected;
 
-        private readonly RemoteClientRegistry _remoteClientRegistry = new RemoteClientRegistry();
+        private readonly RemoteConnectionRegistry _remoteClientRegistry = new RemoteConnectionRegistry();
 
-        public IEnumerable<RemoteClient> RemoteClients => _remoteClientRegistry.All;
+        public IEnumerable<RemoteConnection> RemoteClients => _remoteClientRegistry.All;
 
-        public ServerControl(DorsServerConfiguration configuration)
+        private IApprovalCheck _approvalCheck;
+        public IApprovalCheck ApprovalCheck
+        {
+            get => _approvalCheck;
+            set
+            {
+                if (_approvalCheck == null)
+                {
+                    _netPeerConfiguration.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
+                }
+                _approvalCheck = value;
+            }
+        }
+
+        public ServerControl(DorsServerConfiguration configuration, int port)
         {
             _configuration = configuration;
             _cancelSource = new CancellationTokenSource();
+            _netPeerConfiguration = new NetPeerConfiguration(configuration.AppIdentifier);
+            _netPeerConfiguration.Port = port;
         }
 
         public void Start()
         {
-            NetServer = new NetServer(_configuration.PeerConfiguration);
+            NetServer = new NetServer(_netPeerConfiguration);
             NetServer.Start();
 
             new Thread(Process).Start();
@@ -47,10 +64,10 @@ namespace DORS.Servers
                     {
                         case NetIncomingMessageType.ConnectionApproval:
                             // Deserialize message - then either approval or deny using approval method.
-                            var action = _configuration.SerializationStrategy.Deserialize(message);
-                            var remoteClient = _remoteClientRegistry[message.SenderConnection.RemoteUniqueIdentifier];
-                            if (action != null 
-                                &&_configuration.ApprovalCheck(remoteClient, action))
+                            var approvalMessage = _configuration.SerializationStrategy.Deserialize(message);
+                            var remoteClient = GetRemoteConnection(message);
+                            if (approvalMessage != null 
+                                && ApprovalCheck.IsApproved(remoteClient, approvalMessage))
                             {
                                 message.SenderConnection.Approve();
                                 ApprovalGranted?.Invoke(this, remoteClient);
@@ -93,18 +110,28 @@ namespace DORS.Servers
             }
         }
 
+        private RemoteConnection GetRemoteConnection(NetIncomingMessage netIncomingMessage)
+        {
+            var id = netIncomingMessage.SenderConnection.RemoteUniqueIdentifier;
+
+            if (_remoteClientRegistry[id] != null)
+            {
+                return _remoteClientRegistry[id];
+            }
+
+            var remoteConnection = new RemoteConnection();
+            remoteConnection.ServerControl = this;
+            remoteConnection.Connection = netIncomingMessage.SenderConnection;
+            remoteConnection.Initialise();
+
+            _remoteClientRegistry[id] = remoteConnection;
+            return remoteConnection;
+        }
+
         // When peer connects, create them a remote client.
         private void OnConnected(NetIncomingMessage message)
         {
-            var id = message.SenderConnection.RemoteUniqueIdentifier;
-
-            var instance = new RemoteClient();
-            instance.Connection = message.SenderConnection;
-            instance.Initialise();
-
-            _remoteClientRegistry[id] = instance;
-
-            Connected?.Invoke(this, instance);
+            Connected?.Invoke(this, GetRemoteConnection(message));
         }
 
 

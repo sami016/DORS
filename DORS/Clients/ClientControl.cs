@@ -17,6 +17,7 @@ namespace DORS.Clients
         private readonly DorsClientConfiguration _configuration;
         private ClientSession _activeSession;
 
+        public bool IsConnected { get; private set; }
         public bool IsConnecting { get; private set; }
         public bool IsHopping { get; private set; }
 
@@ -59,15 +60,6 @@ namespace DORS.Clients
         public void Connect(string host, int port, object authMessage = null)
         {
             AsyncConnect(host, port, authMessage).Start();
-            //if (_activeSession != null)
-            //{
-            //    throw new Exception("Session already running");
-            //}
-            //_activeSession = new ClientSession(_configuration, host, port, authMessage);
-            //_activeSession.Connected += HandleConnected;
-            //_activeSession.Disconnected += HandleDisconnected;
-            //_activeSession.Errored += HandleErrored;
-            //_activeSession.Start();
         }
 
         public async Task<bool> AsyncConnect(string host, int port, object authMessage)
@@ -78,24 +70,33 @@ namespace DORS.Clients
             }
             IsConnecting = true;
             var session = new ClientSession(_configuration, host, port, authMessage);
+            session.Disconnected += HandleDisconnected;
+            session.Connected += HandleConnected;
+            session.Errored += HandleErrored;
+            session.MessageReceived += HandleMessageReceived;
+            
             var success = await session.AsyncConnect();
             if (success)
             {
                 _activeSession = session;
-                _activeSession.Disconnected += HandleDisconnected;
-                _activeSession.Connected += HandleConnected;
-                _activeSession.Errored += HandleErrored;
-                _activeSession.MessageReceived += HandleMessageReceived;
 
+                IsConnected = true;
                 Connected?.Invoke(this, EventArgs.Empty);
+            } 
+            else
+            {
+                session.Disconnected -= HandleDisconnected;
+                session.Connected -= HandleConnected;
+                session.Errored -= HandleErrored;
+                session.MessageReceived -= HandleMessageReceived;
             }
             IsConnecting = false;
             return success;
         }
 
-        private void HandleMessageReceived(object sender, object action)
+        private void HandleMessageReceived(object sender, object message)
         {
-            MessageReceived?.Invoke(this, action);
+            MessageReceived?.Invoke(this, message);
         }
 
         private void HandleErrored(object sender, Exception e)
@@ -105,11 +106,13 @@ namespace DORS.Clients
 
         private void HandleDisconnected(object sender, EventArgs e)
         {
+            IsConnected = false;
             Disconnected?.Invoke(this, e);
         }
 
         private void HandleConnected(object sender, EventArgs e)
         {
+            IsConnected = true;
             Connected?.Invoke(this, e);
         }
 
@@ -130,13 +133,14 @@ namespace DORS.Clients
             {
                 // Create a new session, and let it connect.
                 var pendingSession = new ClientSession(_configuration, host, port, authMessage);
-                var success = pendingSession.Connect();
+                var success = pendingSession.ProcessIncomingMessagesStart();
                 if (success)
                 {
                     // Connection successful - 
                     _activeSession.Disconnected -= HandleDisconnected;
                     _activeSession.Connected -= HandleConnected;
                     _activeSession.Errored -= HandleErrored;
+                    _activeSession.MessageReceived -= HandleMessageReceived;
                     _activeSession.Disconnect();
                     _activeSession.Dispose();
 
@@ -144,6 +148,7 @@ namespace DORS.Clients
                     _activeSession.Disconnected += HandleDisconnected;
                     _activeSession.Connected += HandleConnected;
                     _activeSession.Errored += HandleErrored;
+                    _activeSession.MessageReceived += HandleMessageReceived;
 
                     Hopped?.Invoke(this, EventArgs.Empty);
                 }
