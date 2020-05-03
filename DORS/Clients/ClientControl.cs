@@ -82,6 +82,8 @@ namespace DORS.Clients
 
                 IsConnected = true;
                 Connected?.Invoke(this, EventArgs.Empty);
+
+                session.ProcessIncomingMessages();
             } 
             else
             {
@@ -129,31 +131,47 @@ namespace DORS.Clients
 
             IsHopping = true;
 
+            // Clear old connection.
+            try
+            {
+
+                // Connection successful - 
+                _activeSession.Disconnected -= HandleDisconnected;
+                _activeSession.Connected -= HandleConnected;
+                _activeSession.Errored -= HandleErrored;
+                _activeSession.MessageReceived -= HandleMessageReceived;
+                _activeSession.Disconnect();
+                _activeSession.Dispose();
+            } catch (Exception ex)
+            {
+                throw ex;
+            }
+
             try
             {
                 // Create a new session, and let it connect.
                 var pendingSession = new ClientSession(_configuration, host, port, authMessage);
-                var success = pendingSession.ProcessIncomingMessagesStart();
+                pendingSession.Disconnected += HandleDisconnected;
+                pendingSession.Connected += HandleConnected;
+                pendingSession.Errored += HandleErrored;
+                pendingSession.MessageReceived += HandleMessageReceived;
+                var success = pendingSession.ProcessMessagesStart();
                 if (success)
                 {
-                    // Connection successful - 
-                    _activeSession.Disconnected -= HandleDisconnected;
-                    _activeSession.Connected -= HandleConnected;
-                    _activeSession.Errored -= HandleErrored;
-                    _activeSession.MessageReceived -= HandleMessageReceived;
-                    _activeSession.Disconnect();
-                    _activeSession.Dispose();
 
                     _activeSession = pendingSession;
-                    _activeSession.Disconnected += HandleDisconnected;
-                    _activeSession.Connected += HandleConnected;
-                    _activeSession.Errored += HandleErrored;
-                    _activeSession.MessageReceived += HandleMessageReceived;
+
+                    // Start handling messages.
+                    pendingSession.ProcessIncomingMessages();
 
                     Hopped?.Invoke(this, EventArgs.Empty);
                 }
                 else
                 {
+                    pendingSession.Disconnected -= HandleDisconnected;
+                    pendingSession.Connected -= HandleConnected;
+                    pendingSession.Errored -= HandleErrored;
+                    pendingSession.MessageReceived -= HandleMessageReceived;
                     pendingSession.Dispose();
 
                     HopFailed?.Invoke(this, EventArgs.Empty);

@@ -75,6 +75,9 @@ namespace DORS.Clients
             _connection = _netClient.Connect(host, port, hailMessage);
         }
 
+        /// <summary>
+        /// Begins the main process of handling incoming messages.
+        /// </summary>
         public void ProcessIncomingMessages()
         {
             new Thread(Process).Start();
@@ -82,14 +85,14 @@ namespace DORS.Clients
 
         public Task<bool> AsyncConnect()
         {
-            return Task.Run((Func<bool>)ProcessIncomingMessagesStart);
+            return Task.Run((Func<bool>)ProcessMessagesStart);
         }
 
         /// <summary>
         /// Process only status changed messages until either a connected or a not connected.
         /// </summary>
         /// <param name="connected">connected succefully</param>
-        private bool ProcessMessagesStart()
+        public bool ProcessMessagesStart()
         {
             // Read messages until we either connect or disconnect.
             foreach (var message in MessageStream())
@@ -111,25 +114,6 @@ namespace DORS.Clients
                 }
             }
             return false;
-        }
-
-        /// <summary>
-        /// Connects synchronously.
-        /// This will call start automatically when connection succeeds.
-        /// </summary>
-        /// <returns></returns>
-        public bool ProcessIncomingMessagesStart()
-        {
-            // Listens for status changed notifications until we get either connected or disconnected.
-            var connected = ProcessMessagesStart();
-
-            // If connection was successful, start processing incoming messages in a new thread.
-            if (connected)
-            {
-                ProcessIncomingMessages();
-            }
-
-            return connected;
         }
 
         /// <summary>
