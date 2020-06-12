@@ -36,12 +36,13 @@ namespace DORS.Shared
             {
                 MessageHandler<object> objectHandler = obj => handler(obj as T);
                 _typeHandlers[type].Add(objectHandler);
-                return () => Remove(type, objectHandler);
+                return () => RemoveSubscription<T>(objectHandler);
             }
         }
 
-        internal void Remove(Type type, MessageHandler<object> handler)
+        public void RemoveSubscription<T>(MessageHandler<object> handler)
         {
+            var type = typeof(T);
             IList<MessageHandler<object>> handlers;
             lock (_lock)
             {

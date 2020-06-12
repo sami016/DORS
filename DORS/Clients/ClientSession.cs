@@ -104,15 +104,18 @@ namespace DORS.Clients
                         var status = (NetConnectionStatus)message.PeekByte();
                         if (status == NetConnectionStatus.Connected)
                         {
+                            IsConnected = true;
                             return true;
                         }
                         else if (status == NetConnectionStatus.Disconnected)
                         {
+                            IsConnected = false;
                             return false;
                         }
                         break;
                 }
             }
+            IsConnected = false;
             return false;
         }
 
